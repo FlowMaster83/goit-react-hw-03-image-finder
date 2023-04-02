@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useState } from 'react';
 import { GlobalStyles } from './GlobalStyles';
 import 'modern-normalize';
 
@@ -6,35 +6,25 @@ import { StyledApp } from './App.styled';
 import { Searchbar } from './Searchbar/Searchbar';
 import { ImageGallery } from './ImageGallery/ImageGallery';
 
-export class App extends Component {
-  state = {
-    page: 1,
-    query: '',
-  };
+export const App = () => {
+  const [page, setPage] = useState(1);
+  const [query, setQuery] = useState('');
 
-  handleSubmit = ({ query }, { resetForm }) => {
-    this.setState({ query, page: 1 });
+  const handleSubmit = ({ query }, { resetForm }) => {
+    setQuery(query);
+    setPage(1);
     resetForm();
   };
 
-  handleCilck = () => {
-    this.setState(prevState => ({
-      page: prevState.page + 1,
-    }));
+  const handleCilck = () => {
+    setPage(prevState => prevState + 1);
   };
 
-  render() {
-    const { query, page } = this.state;
-    return (
-      <StyledApp>
-        <Searchbar onSubmit={this.handleSubmit} />
-        <ImageGallery
-          query={query}
-          page={page}
-          handleCilck={this.handleCilck}
-        />
-        <GlobalStyles />
-      </StyledApp>
-    );
-  }
-}
+  return (
+    <StyledApp>
+      <Searchbar onSubmit={handleSubmit} />
+      <ImageGallery query={query} page={page} handleCilck={handleCilck} />
+      <GlobalStyles />
+    </StyledApp>
+  );
+};

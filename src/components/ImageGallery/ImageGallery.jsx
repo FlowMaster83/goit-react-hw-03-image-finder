@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -14,39 +14,34 @@ const Status = {
   SUCCESS: 'success',
 };
 
-export class ImageGallery extends Component {
-  state = {
-    status: Status.IDLE,
-    images: [],
-    isLoading: false,
-    isMore: false,
-  };
+export const ImageGallery = ({ query, page, handleCilck }) => {
+  const [status, setStatus] = useState(Status.IDLE);
+  const [images, setImages] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isMore, setIsMore] = useState(false);
 
-  async componentDidUpdate(prevProps, prevState) {
-    const { query, page } = this.props;
+  useEffect(() => {
+    if (query.trim() === '') {
+      return;
+    }
 
-    if (prevProps.query !== query || prevProps.page !== page) {
-      this.setState({
-        isLoading: true,
-      });
-
+    async function handleFetch(query, page) {
+      setIsLoading(true);
       try {
         const data = await fetchImages(query, page);
 
         // Повернення пустого масиву з бекенду
         if (data.hits.length === 0) {
-          this.setState({
-            status: Status.IDLE,
-          });
+          setStatus(Status.IDLE);
+          setIsMore(false);
           toast.error('No results were found for your request');
           return;
         }
 
-        this.setState({
-          isMore: data.hits.length === 12,
-        });
+        // Активація кнопки
+        setIsMore(data.hits.length === 12);
 
-        const images = data.hits.map(
+        const newImages = data.hits.map(
           ({ id, webformatURL, largeImageURL, tags }) => ({
             id,
             webformatURL,
@@ -56,16 +51,13 @@ export class ImageGallery extends Component {
         );
 
         // Перевірка на новий запит
-        if (prevProps.query !== query) {
+        if (page === 1) {
           toast.success(`We found ${data.totalHits} images`);
-          this.setState({
-            status: Status.SUCCESS,
-            images: [...images],
-          });
+          setStatus(Status.SUCCESS);
+          setImages([...newImages]);
+          window.scroll({ top: 0 });
         } else {
-          this.setState({
-            images: [...prevState.images, ...images],
-          });
+          setImages(prevState => [...prevState, ...newImages]);
         }
 
         //Остання сторінка запитів
@@ -75,40 +67,33 @@ export class ImageGallery extends Component {
         }
       } catch (error) {
         toast.error('Sorry, something went wrong. Please, try again');
-        this.setState({
-          status: Status.IDLE,
-        });
+        setStatus(Status.IDLE);
       } finally {
-        this.setState({
-          isLoading: false,
-        });
+        setIsLoading(false);
       }
     }
-  }
 
-  render() {
-    const { status, images, isLoading, isMore } = this.state;
-    const { handleCilck } = this.props;
+    handleFetch(query, page);
+  }, [query, page]);
 
-    return (
-      <>
-        {isLoading && <Loader visible={isLoading} />}
+  return (
+    <>
+      {isLoading && <Loader visible={isLoading} />}
 
-        {status === 'success' && (
-          <Gallery>
-            {images.map(image => {
-              return <ImageGalleryItem key={image.id} image={image} />;
-            })}
-          </Gallery>
-        )}
+      {status === 'success' && (
+        <Gallery>
+          {images.map(image => {
+            return <ImageGalleryItem key={image.id} image={image} />;
+          })}
+        </Gallery>
+      )}
 
-        {isMore && <Button onClick={handleCilck} />}
+      {isMore && <Button onClick={handleCilck} />}
 
-        <ToastContainer autoClose={2000} />
-      </>
-    );
-  }
-}
+      <ToastContainer autoClose={2000} />
+    </>
+  );
+};
 
 ImageGallery.propTypes = {
   query: PropTypes.string.isRequired,

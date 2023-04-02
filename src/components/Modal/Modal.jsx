@@ -1,60 +1,63 @@
-import { Component } from 'react';
+import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import PropTypes from 'prop-types';
 import { Overlay, ModalWindow } from './Modal.styled';
 
 const modalRoot = document.querySelector('#modal-root');
 let scrollPosition = 0;
 
-export class Modal extends Component {
-  componentDidMount() {
-    window.addEventListener('keydown', this.handleKeyDown);
-    this.disableScroll();
-  }
+export const Modal = ({ largeImageURL, tags, toggleModal }) => {
+  useEffect(() => {
+    const handleKeyDown = e => {
+      if (e.code === 'Escape') {
+        toggleModal();
+      }
+    };
 
-  componentWillUnmount() {
-    window.removeEventListener('keydown', this.handleKeyDown);
-    this.enableScroll();
-  }
+    window.addEventListener('keydown', handleKeyDown);
+    disableScroll();
 
-  handleKeyDown = e => {
-    if (e.code === 'Escape') {
-      this.props.toggleModal();
-    }
-  };
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      enableScroll();
+    };
+  }, [toggleModal]);
 
-  handleBackdropClick = e => {
+  const handleBackdropClick = e => {
     if (e.target === e.currentTarget) {
-      this.props.toggleModal();
+      toggleModal();
     }
   };
 
-  enableScroll = () => {
+  const enableScroll = () => {
     document.body.style.cssText = '';
     window.scroll({ top: scrollPosition });
     document.documentElement.style.scrollBehavior = '';
   };
 
-  disableScroll = () => {
+  const disableScroll = () => {
     scrollPosition = window.scrollY;
     document.body.style.cssText = `
-      position: fixed;
-      top: -${scrollPosition}px;
-      left: 0;
-      height: 100vh;
-      width: 100vw;
-      padding-right: ${window.innerWidth - document.body.offsetWidth}px
-    `;
+        position: fixed;
+        top: -${scrollPosition}px;
+        left: 0;
+        height: 100vh;
+        width: 100vw;
+        padding-right: ${window.innerWidth - document.body.offsetWidth}px
+      `;
     document.documentElement.style.scrollBehavior = 'unset';
   };
 
-  render() {
-    const { largeImageURL, tags } = this.props;
+  return createPortal(
+    <Overlay onClick={handleBackdropClick}>
+      <ModalWindow src={largeImageURL} alt={tags} />
+    </Overlay>,
+    modalRoot
+  );
+};
 
-    return createPortal(
-      <Overlay onClick={this.handleBackdropClick}>
-        <ModalWindow src={largeImageURL} alt={tags} />
-      </Overlay>,
-      modalRoot
-    );
-  }
-}
+Modal.propTypes = {
+  largeImageURL: PropTypes.string.isRequired,
+  tags: PropTypes.string,
+  toggleModal: PropTypes.func.isRequired,
+};
